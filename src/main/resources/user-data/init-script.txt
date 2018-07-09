@@ -1,0 +1,78 @@
+#!/bin/bash
+EXPERIMENT_AUTHOR={EXPERIMENT_AUTHOR}
+EXPERIMENT_DESCRIPTION={EXPERIMENT_DESCRIPTION}
+#TEST_HASH={TEST_HASH}
+#DATASET_HASH={DATASET_HASH}
+EXPERIMENT_DLA_DEPTH={EXPERIMENT_DLA_DEPTH}
+EXPERIMENT_EPOCHS={EXPERIMENT_EPOCHS}
+EXPERIMENT_BATCHSIZE={EXPERIMENT_BATCHSIZE}
+AWS_ACCESS_KEY={AWS_ACCESS_KEY}
+AWS_SECRET_KEY={AWS_SECRET_KEY}
+
+HOME="/home/ec2-user"
+HOME_AWS=$HOME/.aws
+DATA_DIR=$HOME/data
+
+mkdir $HOME_AWS
+mkdir $DATA_DIR
+mkdir $SCRIPT_DIR
+
+sudo chmod -R 777 $DATA_DIR
+# Place AWS credentials
+mkdir /root/.aws
+awsconfig=/root/.aws/config
+echo "[default]" >> $awsconfig
+echo "aws_access_key_id=$AWS_ACCESS_KEY" >> $awsconfig
+echo "aws_secret_access_key=$AWS_SECRET_KEY" >> $awsconfig
+echo "region=us-east-1" >> $awsconfig
+
+# Place AWS credentials
+awsconfig=$HOME_AWS/config
+echo "[default]" >> $awsconfig
+echo "aws_access_key_id=$AWS_ACCESS_KEY" >> $awsconfig
+echo "aws_secret_access_key=$AWS_SECRET_KEY" >> $awsconfig
+echo "region=us-east-1" >> $awsconfig
+
+echo "stage1">> /tmp/status.txt
+#Update Keras
+sudo pip install keras --upgrade
+sudo pip install -U scikit-learn
+
+echo "stage2">> /tmp/status.txt
+# We copy scripts for dataset placement and architecture training
+#TODO pull scripts for model training
+
+status=$(ls $HOME)
+echo "$status">> /tmp/status.txt
+cd $HOME
+status=$(pwd)
+
+echo "experiment author: $EXPERIMENT_AUTHOR" >> $HOME/variables.txt
+echo "experiment description: $EXPERIMENT_DESCRIPTION" >> $HOME/variables.txt
+echo "test hash: $TEST_HASH" >> $HOME/variables.txt
+echo "dataset hash: $DATASET_HASH" >> $HOME/variables.txt
+echo "experiment epochs: $EXPERIMENT_EPOCHS" >> $HOME/variables.txt
+echo "experiment batchsize: $EXPERIMENT_BATCHSIZE" >> $HOME/variables.txt
+
+echo "$status">> /tmp/status.txt
+echo "tar -xzf $HOME/setup-and-train-scripts.tar.gz">> /tmp/status.txt
+/bin/tar -xzf $HOME/setup-and-train-scripts.tar.gz
+
+mv $HOME/scripts/* $HOME/
+mv $HOME/meta/$CONTEXT/* $HOME/
+
+cat $HOME/data-sync.sh.tpl | sed -e "s/\${EXPERIMENT_AUTHOR_TPL}/$EXPERIMENT_AUTHOR/" > $HOME/data-sync.sh
+
+cat $HOME/architecture-train.py.tpl | sed -e "s/\${EXPERIMENT_TOKEN_TPL}/$EXPERIMENT_TOKEN/" | sed -e "s/\${EXPERIMENT_AUTHOR_TPL}/$EXPERIMENT_AUTHOR/" | sed -e "s/\${EXPERIMENT_DESCRIPTION_TPL}/$EXPERIMENT_DESCRIPTION/" | sed -e "s/\${TEST_HASH_TPL}/$TEST_HASH/" | sed -e "s/\${DATASET_HASH_TPL}/$DATASET_HASH/" | sed -e "s/\${EXPERIMENT_DLA_DEPTH_TPL}/$EXPERIMENT_DLA_DEPTH/" | sed -e "s/\${EXPERIMENT_EPOCHS_TPL}/$EXPERIMENT_EPOCHS/" | sed -e "s/\${EXPERIMENT_BATCHSIZE_TPL}/$EXPERIMENT_BATCHSIZE/" > $HOME/architecture-train.py
+
+cat $HOME/pack-and-upload.sh.tpl | sed -e "s/\${EXPERIMENT_AUTHOR_TPL}/$EXPERIMENT_AUTHOR/" > $HOME/pack-and-upload.sh
+
+echo "stage3">> /tmp/status.txt
+# we should execute:
+# data-sync.sh
+# architecture.py
+echo "stage4">> /tmp/status.txt
+export LD_LIBRARY_PATH="/home/ec2-user/src/torch/install/lib:/home/ec2-user/src/cntk/bindings/python/cntk/libs:/usr/local/cuda/lib64:/usr/local/lib:/usr/lib:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/mpi/lib:/home/ec2-user/src/mxnet/mklml_lnx_2017.0.1.20161005/lib:"
+echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH">>/tmp/status.txt
+su -p ec2-user  -c "/usr/bin/nohup /bin/bash $HOME/execute-pipeline.sh > /tmp/pip2.out 2>&1&"
+echo "stage5">> /tmp/status.txt

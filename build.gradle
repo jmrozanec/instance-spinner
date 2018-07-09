@@ -1,0 +1,69 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.2.7.RELEASE")
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'spring-boot'
+
+jar {
+    baseName = 'instance-spinner'
+    version =  '0.1.0'
+}
+
+repositories {
+    mavenCentral()
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+    /* Jetty config - START */
+    compile("org.springframework.boot:spring-boot-starter-web") {
+        exclude module: "spring-boot-starter-tomcat"
+    }
+    compile("org.springframework.boot:spring-boot-starter-jetty")
+    /* Jetty config - END */
+
+    compile('org.springframework.boot:spring-boot-starter-actuator')
+    compile('org.springframework.boot:spring-boot-starter-data-rest')
+    compile('org.springframework.boot:spring-boot-starter-hateoas')
+    compile('org.springframework.boot:spring-boot-starter-web')
+    compile("org.springframework.boot:spring-boot-starter-actuator")
+
+    compile("org.webjars:bootstrap:3.2.0")
+    compile("org.webjars:jquery:2.1.1")
+
+    compile group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.6.0'
+
+    compile group: 'com.google.code.gson', name: 'gson', version: '2.8.0'
+    compile group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1.1'
+
+    compile 'joda-time:joda-time:2.9'
+    compile 'org.apache.commons:commons-lang3:3.4'
+    compile('commons-io:commons-io:2.4')
+    compile('com.google.guava:guava:18.0')
+    compile('com.googlecode.juniversalchardet:juniversalchardet:1.0.3')
+
+    compile("io.springfox:springfox-swagger2:2.0.2")
+    compile("io.springfox:springfox-swagger-ui:2.0.2")
+
+    compile("com.amazonaws:aws-java-sdk:1.11.242")
+    compile("com.amazonaws:aws-java-sdk-core:1.11.242")
+    compile("com.amazonaws:aws-java-sdk-s3:1.11.242")
+
+    testCompile("junit:junit")
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.7'
+}
